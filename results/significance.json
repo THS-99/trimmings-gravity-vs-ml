@@ -1,0 +1,12 @@
+{
+  "best_ml": "RF_lags",
+  "delta_rmse_ppmlB_minus_bestml_eur": 178963.0,
+  "pct_improvement_vs_ppmlB": 53.48,
+  "bootstrap_ci95": [
+    136834.9,
+    223586.5
+  ],
+  "p_two_sided": 0.0005,
+  "B": 2000,
+  "n_test_obs": 75816
+}

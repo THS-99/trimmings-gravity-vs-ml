@@ -1,0 +1,98 @@
+{
+  "mirror": {
+    "2015": {
+      "comext_cif_musd": 6.58,
+      "comexstat_fob_musd": 6.47,
+      "discrepancy_pct": 1.8
+    },
+    "2016": {
+      "comext_cif_musd": 7.39,
+      "comexstat_fob_musd": 7.3,
+      "discrepancy_pct": 1.2
+    },
+    "2017": {
+      "comext_cif_musd": 5.43,
+      "comexstat_fob_musd": 5.2,
+      "discrepancy_pct": 4.4
+    },
+    "2018": {
+      "comext_cif_musd": 5.49,
+      "comexstat_fob_musd": 4.96,
+      "discrepancy_pct": 10.9
+    },
+    "2019": {
+      "comext_cif_musd": 4.92,
+      "comexstat_fob_musd": 5.04,
+      "discrepancy_pct": -2.4
+    },
+    "2020": {
+      "comext_cif_musd": 3.95,
+      "comexstat_fob_musd": 3.74,
+      "discrepancy_pct": 5.5
+    },
+    "2021": {
+      "comext_cif_musd": 4.13,
+      "comexstat_fob_musd": 3.57,
+      "discrepancy_pct": 15.5
+    },
+    "2022": {
+      "comext_cif_musd": 4.5,
+      "comexstat_fob_musd": 4.35,
+      "discrepancy_pct": 3.4
+    },
+    "2023": {
+      "comext_cif_musd": 4.2,
+      "comexstat_fob_musd": 3.93,
+      "discrepancy_pct": 6.9
+    },
+    "2024": {
+      "comext_cif_musd": 4.45,
+      "comexstat_fob_musd": 4.03,
+      "discrepancy_pct": 10.3
+    },
+    "2025": {
+      "comext_cif_musd": 5.26,
+      "comexstat_fob_musd": 4.81,
+      "discrepancy_pct": 9.4
+    }
+  },
+  "mirror_mean_discrepancy_pct": 6.1,
+  "mirror_correlation": 0.985,
+  "unmatched_country_names": [
+    "Angola",
+    "Ant\u00edgua e Barbuda",
+    "Argentina",
+    "Aruba",
+    "Ar\u00e1bia Saudita",
+    "Austr\u00e1lia",
+    "Azerbaij\u00e3o",
+    "Bahamas",
+    "Bangladesh",
+    "Barbados",
+    "Belize",
+    "Bermudas",
+    "Bol\u00edvia",
+    "Brasil",
+    "Brunei",
+    "Burkina Faso",
+    "B\u00f3snia-Herzegovina",
+    "Cabo Verde",
+    "Camar\u00f5es",
+    "Canad\u00e1"
+  ],
+  "eu_imports_total_meur_by_year": {
+    "2015": 763.7,
+    "2016": 819.0,
+    "2017": 836.9,
+    "2018": 813.7,
+    "2019": 810.7,
+    "2020": 647.6,
+    "2021": 765.1,
+    "2022": 953.4,
+    "2023": 846.9,
+    "2024": 903.7,
+    "2025": 863.8
+  },
+  "dip_2020_vs_2019_pct": -20.1,
+  "rebound_2021_vs_2020_pct": 18.1
+}

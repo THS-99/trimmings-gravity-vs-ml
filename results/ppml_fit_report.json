@@ -1,0 +1,38 @@
+{
+  "O1_specA": {
+    "converged": true,
+    "iterations": 9,
+    "n_train": 202176,
+    "n_params": 20
+  },
+  "O1_specB": {
+    "converged": true,
+    "iterations": 13,
+    "n_train": 202176,
+    "n_params": 95
+  },
+  "O2_specA": {
+    "converged": true,
+    "iterations": 11,
+    "n_train": 227448,
+    "n_params": 21
+  },
+  "O2_specB": {
+    "converged": true,
+    "iterations": 16,
+    "n_train": 227448,
+    "n_params": 95
+  },
+  "O3_specA": {
+    "converged": true,
+    "iterations": 12,
+    "n_train": 252720,
+    "n_params": 22
+  },
+  "O3_specB": {
+    "converged": true,
+    "iterations": 11,
+    "n_train": 252720,
+    "n_params": 95
+  }
+}

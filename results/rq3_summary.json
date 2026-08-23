@@ -1,0 +1,59 @@
+{
+  "winner": "RF_lags",
+  "similar_suppliers": [
+    "PK",
+    "PH",
+    "KR",
+    "BA",
+    "MM",
+    "MG",
+    "XS",
+    "EC",
+    "MK",
+    "EG"
+  ],
+  "brazil": {
+    "observed_meur": 12.65,
+    "predicted_meur": 11.0,
+    "relative_deviation_pct": 15.0
+  },
+  "brazil_ppmlB_relative_deviation_pct": -13.5,
+  "similar_median_relative_deviation_pct": 56.5,
+  "similar_range_pct": [
+    18.4,
+    179.1
+  ],
+  "brazil_rank_in_similar_set": 11,
+  "brazil_by_heading": {
+    "5804": {
+      "obs_meur": 0.008,
+      "pred_meur": 0.002,
+      "rel_dev_pct": 272.1
+    },
+    "5806": {
+      "obs_meur": 12.486,
+      "pred_meur": 10.984,
+      "rel_dev_pct": 13.7
+    },
+    "5808": {
+      "obs_meur": 0.011,
+      "pred_meur": 0.003,
+      "rel_dev_pct": 245.7
+    },
+    "5810": {
+      "obs_meur": 0.068,
+      "pred_meur": 0.003,
+      "rel_dev_pct": 2302.9
+    },
+    "9606": {
+      "obs_meur": 0.063,
+      "pred_meur": 0.008,
+      "rel_dev_pct": 707.5
+    },
+    "9607": {
+      "obs_meur": 0.014,
+      "pred_meur": 0.002,
+      "rel_dev_pct": 729.2
+    }
+  }
+}
