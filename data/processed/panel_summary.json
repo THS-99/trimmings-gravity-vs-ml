@@ -1,0 +1,41 @@
+{
+  "n_obs": 277992,
+  "n_exporters": 39,
+  "n_destinations": 27,
+  "n_hs6": 24,
+  "years": [
+    2015,
+    2025
+  ],
+  "nonzero_obs": 72288,
+  "zero_share_overall": 0.74,
+  "zero_share_train_2015_2022": 0.7483,
+  "zero_share_test_2023_2025": 0.7177,
+  "zero_share_by_year": {
+    "2015": 0.7658,
+    "2016": 0.7606,
+    "2017": 0.758,
+    "2018": 0.7504,
+    "2019": 0.751,
+    "2020": 0.7534,
+    "2021": 0.7292,
+    "2022": 0.7181,
+    "2023": 0.7149,
+    "2024": 0.7153,
+    "2025": 0.7229
+  },
+  "total_value_eur_bn": 9.025,
+  "value_share_5806": 0.2782,
+  "brazil_total_meur": 50.32,
+  "brazil_share_5806": 0.9873,
+  "covariate_missing_rates": {
+    "dist": 0.0,
+    "contig": 0.0,
+    "comlang_off": 0.0,
+    "rta": 0.0,
+    "gdp_exporter": 0.0186,
+    "gdp_destination": 0.0,
+    "pop_exporter": 0.014,
+    "pop_destination": 0.0
+  }
+}
