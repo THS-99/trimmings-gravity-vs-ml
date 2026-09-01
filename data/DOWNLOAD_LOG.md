@@ -1,6 +1,6 @@
 # Download log
 
-All raw data downloaded on **2026-08-21** (Comtrade-style revisions make the date matter; Comext dataset stamp: updated 2026-08-14).
+All raw data downloaded on 2026-08-21 (trade statistics get revised, so the date matters; the Comext dataset stamp said "updated 2026-08-14").
 
 | File | Source | Query / URL | Rows / size |
 |---|---|---|---|
@@ -11,15 +11,15 @@ All raw data downloaded on **2026-08-21** (Comtrade-style revisions make the dat
 | `API_EMU_PA.NUS.FCRF_*.zip` | World Bank WDI | Euro area (EMU) official exchange rate, EUR per USD, annual | 1.4 KB |
 | `Gravity_csv_V202211.zip` | CEPII Gravity database V202211 (Conte et al. 2022) | `cepii.fr/DATA_DOWNLOAD/gravity/data/Gravity_csv_V202211.zip` | 207 MB zip / 1.25 GB csv — kept OUT of the repo (redistribution + size); re-downloadable via `04_download_cepii.py` |
 
-## Execution note (honesty)
+## How the downloads were actually executed
 
-The analysis environment has no direct network access to these hosts, so the queries above were executed through the author's browser session on 2026-08-21 with byte-identical parameters, and the responses saved to CSV. Scripts `01_download_comext.py` to `04_download_cepii.py` contain the same queries as runnable `requests` code so the pipeline is reproducible in any normal environment. Everything downstream of `data/raw/` runs entirely from the scripts.
+The machine I ran the analysis on had no direct network access to these hosts, so I executed the queries above through a normal browser session on 2026-08-21 with the same parameters and saved the responses to CSV. Scripts `01_download_comext.py` to `04_download_cepii.py` contain the same queries as runnable `requests` code, so in a normal environment the pipeline re-downloads everything by itself. Everything downstream of `data/raw/` runs entirely from the scripts.
 
 ## Supplier selection (documented, reproducible)
 
 Extra-EU suppliers ranked by cumulative EU27 imports of the six headings, 2015-2025 (Comext, reporter EU27_2020, partner=all): top 40 kept; pseudo-partner QW ("countries not specified") dropped -> 39 suppliers. Brazil ranks 16th (EUR 50.3M cumulative). Ranking query preserved in `01_download_comext.py`.
 
-## Not collected (documented deviations)
+## What I did not collect (and why)
 
-- **WITS tariffs:** access blocked in the work environment and the per-partner preferential tariff structure is largely captured by the RTA dummy for this EU-destination panel; tariffs are listed as future work / limitation instead of a covariate. Recorded in Decision_Log.md.
-- **UN Comtrade:** not needed as a third source; the mirror check uses Comext x ComexStat directly, and ComexStat totals were already cross-verified against Comtrade in the facts bank.
+- WITS tariffs: access was blocked from the environment I worked in, and for this EU-destination panel the preferential tariff structure is largely captured by the RTA dummy anyway. Tariffs are listed as a limitation / future work in the thesis instead of a covariate.
+- UN Comtrade: not needed as a third source. The mirror check uses Comext x ComexStat directly, and the ComexStat totals had already been cross-checked against Comtrade during the literature/facts verification.
