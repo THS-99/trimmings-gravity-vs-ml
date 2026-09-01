@@ -1,6 +1,6 @@
 # Machine learning vs structural gravity on EU imports of textile trimmings
 
-Code and results for my MSc dissertation at Gisma University of Applied Sciences (Data Science, AI and Digital Business, module M598, 2026):
+Code and results for my MSc dissertation at Gisma University of Applied Sciences (Data Science, AI and Digital Business):
 
 *Machine Learning versus Structural Gravity: Predicting and Explaining EU Import Flows of Textile Trimmings, with an Application to Brazilian Suppliers (2015-2025)*
 
