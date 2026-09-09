@@ -1,6 +1,6 @@
-# trimmings-gravity-vs-ml
+# Trimmings: Gravity vs ML
 
-This repository contains my MSc dissertation project, implemented in Python as a set of numbered scripts and a Jupyter notebook, for module M598 of the MSc in Data Science, AI and Digital Business at Gisma University of Applied Sciences in 2026. The title of the dissertation is *Machine Learning versus Structural Gravity: Predicting and Explaining EU Import Flows of Textile Trimmings, with an Application to Brazilian Suppliers (2015-2025)*.
+This repository contains my MSc dissertation project, implemented in Python as a set of numbered scripts and a Jupyter notebook, for module M598 of the MSc in Data Science, AI and Digital Business at Gisma University of Applied Sciences. The title of the dissertation is *Machine Learning versus Structural Gravity: Predicting and Explaining EU Import Flows of Textile Trimmings, with an Application to Brazilian Suppliers (2015-2025)*.
 
 The dissertation compares two ways of modelling bilateral trade in a narrow product group. One is the structural gravity model, the standard tool in trade economics, which I estimate with Poisson pseudo maximum likelihood. The other is machine learning, trained on exactly the same panel so that neither side sees information the other does not have. The products are textile trimmings, meaning lace, narrow woven fabrics, braids, embroidery, buttons and zippers (HS headings 5804, 5806, 5808, 5810, 9606 and 9607), and the flows are imports of the 27 EU member states from suppliers outside the union between 2015 and 2025.
 
