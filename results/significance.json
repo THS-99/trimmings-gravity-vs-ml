@@ -1,12 +1,22 @@
 {
-  "best_ml": "RF_lags",
-  "delta_rmse_ppmlB_minus_bestml_eur": 178963.0,
-  "pct_improvement_vs_ppmlB": 53.48,
+  "best_ml": "RF_hyb_lags",
+  "delta_rmse_ppmlB_minus_bestml_eur": 179250.6,
+  "pct_improvement_vs_ppmlB": 53.57,
   "bootstrap_ci95": [
-    136834.9,
-    223586.5
+    136487.7,
+    224561.3
   ],
   "p_two_sided": 0.0005,
   "B": 2000,
-  "n_test_obs": 75816
+  "n_test_obs": 75816,
+  "hybrid_vs_pure": {
+    "best_hybrid": "RF_hyb_lags",
+    "best_pure_ml": "RF_lags",
+    "delta_rmse_pure_minus_hybrid_eur": 287.6,
+    "bootstrap_ci95": [
+      -1242.6,
+      1527.8
+    ],
+    "p_two_sided": 0.635
+  }
 }
