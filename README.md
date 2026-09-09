@@ -1,55 +1,39 @@
-# Machine learning vs structural gravity on EU imports of textile trimmings
+# trimmings-gravity-vs-ml
 
-Code and results for my MSc dissertation at Gisma University of Applied Sciences (Data Science, AI and Digital Business, module M598, 2026):
+This repository contains my MSc dissertation project, implemented in Python as a set of numbered scripts and a Jupyter notebook, for module M598 of the MSc in Data Science, AI and Digital Business at Gisma University of Applied Sciences in 2026. The title of the dissertation is *Machine Learning versus Structural Gravity: Predicting and Explaining EU Import Flows of Textile Trimmings, with an Application to Brazilian Suppliers (2015-2025)*.
 
-*Machine Learning versus Structural Gravity: Predicting and Explaining EU Import Flows of Textile Trimmings, with an Application to Brazilian Suppliers (2015-2025)*
+The dissertation compares two ways of modelling bilateral trade in a narrow product group. One is the structural gravity model, the standard tool in trade economics, which I estimate with Poisson pseudo maximum likelihood. The other is machine learning, trained on exactly the same panel so that neither side sees information the other does not have. The products are textile trimmings, meaning lace, narrow woven fabrics, braids, embroidery, buttons and zippers (HS headings 5804, 5806, 5808, 5810, 9606 and 9607), and the flows are imports of the 27 EU member states from suppliers outside the union between 2015 and 2025.
 
-The idea: take EU imports of textile trimmings (lace, ribbons, braids, embroidery, buttons and zippers, HS headings 5804, 5806, 5808, 5810, 9606, 9607) at HS6 level and check whether machine learning models actually beat a gravity model estimated with PPML when both get exactly the same data. Then use both models to see where Brazil sells less to the EU than you would expect from its fundamentals.
+The hypothesis I tested was that whatever accuracy machine learning gains over the gravity model on a panel like this one comes from the persistence of trade over time, and not from a smarter use of the economic covariates. To separate the two, every machine learning model is trained twice, with and without lagged trade features, and there is also a hybrid version of each one, where the gravity model's own prediction enters the machine learning side as an extra feature. That last part came out of a discussion with my supervisor and turned out to be the most interesting result of the comparison.
 
-## What I found
+The applied part of the work takes both model families and asks where Brazilian suppliers sell less to the EU than their fundamentals would suggest, by destination country and by product heading, using a group of scale-comparable suppliers as the reference.
 
-The random forest with lag features beats PPML clearly out of sample: RMSE around EUR 156k against 335k for the PPML prediction spec, a 53.5% reduction (paired bootstrap, p < 0.001, tested on 2023, 2024 and 2025 as held-out years). PPML converged in every fit, so it is a fair baseline.
+Main tasks:
 
-The part I find most interesting came from an ablation. Remove the lag features and the forest loses to PPML (321,841 vs 318,125). So the ML advantage here is persistence, trade this year looks a lot like trade last year, and not some smarter use of GDP or distance. The explainability results say the same thing: permutation importance is dominated by the rolling mean and the first lag, and distance even flips sign between the PPML coefficient (-0.393) and the SHAP association.
+- Building the panel of EU imports at HS6 level for eleven years, joined with the economic and geographic covariates, keeping zero flows as true zeros instead of dropping them.
+- Validating the data against Brazil's own export records as a mirror check, and against events that should be visible in the series, such as the 2020 pandemic dip.
+- Estimating the gravity model in two specifications, one descriptive with fixed effects and one for prediction that only uses variables available before the flow happens.
+- Training the machine learning benchmark, three model families with and without lag features, plus the hybrid variants that receive the gravity prediction.
+- Comparing the gravity coefficients with the importance measures from the machine learning side, including the cases where the two disagree on the direction of an effect.
+- Measuring Brazil's deviation between observed and predicted trade, and breaking it down by destination and by heading.
+- Running the robustness checks on the sample, the target transformation, the validation split and the feature set.
 
-For Brazil, both model families tell the same story. It ranks last among its ten scale-comparable peers, and almost all of its observed EU trade is a single corridor (narrow woven fabrics to Romania). The gravity model puts the unrealized potential mostly in Portugal, Italy, France, Germany and Spain.
+Algorithms used: Poisson pseudo maximum likelihood with fixed effects for the gravity side, random forest, gradient boosting with LightGBM and a multilayer perceptron for the machine learning side, blocked forward validation by year for the train and test split (the panel is a time series, so a random split would leak future information into training), paired bootstrap for the significance tests between models, permutation importance and SHAP values for the explainability part.
 
-Every number reported in the thesis (Tables 5.1 to 5.5, figures, significance tests, fit reports) is in `results/`.
+Technologies used: the whole implementation is in Python 3.11 with the packages:
 
-## Data
+- pandas 2
+- NumPy
+- statsmodels 0.14.6
+- scikit-learn 1.8.0
+- LightGBM 4.7.0
+- SHAP 0.51.0
+- SciPy
+- Matplotlib
+- requests
 
-The panel has 277,992 rows: 39 extra-EU exporters x 27 EU destinations x 24 HS6 codes x 11 years, with zeros kept as true zeros (74.0% of the panel). I validated it against mirror statistics (EU-reported CIF vs Brazil-reported FOB: +6.1% mean discrepancy, correlation 0.985) and the 2020 pandemic dip (-20.1%) shows up where it should.
+Those are the versions that produced every number reported in the dissertation, with the random seed fixed at 42 in all the scripts.
 
-Sources:
+Data sources: Eurostat Comext (dataset DS-045409) for the EU import values, ComexStat and MDIC for the Brazilian mirror records, the World Bank World Development Indicators for GDP and population, and the CEPII Gravity database V202211 for distance, contiguity, common language and trade agreements. I do not redistribute the raw files here, partly because of their size and partly because of the licence terms, but the first four scripts download them again with the same queries I used and `data/DOWNLOAD_LOG.md` keeps the queries, the download dates and the row counts. Trade statistics get revised over time, so a fresh download can come out slightly different from what the dissertation reports.
 
-- Eurostat Comext (dataset DS-045409) for the import values
-- ComexStat/MDIC for Brazil's own export records (mirror check)
-- World Bank WDI for GDP and population
-- CEPII Gravity database V202211 for distance, contiguity, language and RTA
-
-I don't redistribute the raw files (size and licensing), but scripts 01 to 04 re-download everything with the same queries I used. `data/DOWNLOAD_LOG.md` has the exact queries, dates and row counts. Trade statistics get revised over time, so a fresh download can differ a bit from the reported numbers.
-
-## Running it
-
-```bash
-pip install -r requirements.txt
-./run_all.sh
-```
-
-Scripts are numbered in execution order: 01-04 download the data, 05-06 build and validate the panel, 14 makes the descriptives, 08 estimates the PPML specs, 09 trains the ML models, and 10-13 do evaluation, explainability, the Brazil deviations and robustness. Seed is fixed at 42. Fair warning: the ML tuning is the slow part, it took a few hours on the 2-CPU machine I ran it on (the grids are in `results/ml_tuning_report.json`).
-
-If you just want the ML part without installing anything, there is a lean Colab notebook in `notebooks/ML_trimmings_thesis.ipynb` that loads the panel straight from this repo ([open it in Colab](https://colab.research.google.com/github/THS-99/trimmings-gravity-vs-ml/blob/main/notebooks/ML_trimmings_thesis.ipynb)). It is a simplified version of scripts 07-10, so its numbers differ a little from the thesis tables.
-
-## What's where
-
-```
-scripts/           the numbered pipeline
-data/              download log + small derived files (HS6 scope, panel summary)
-results/           tables, figures, significance tests, fit and tuning reports
-requirements.txt   pinned versions (Python 3.11, scikit-learn 1.8, statsmodels 0.14.6, LightGBM 4.7, SHAP 0.51)
-run_all.sh         runs the whole thing in order
-```
-
-## Citation
-
-Reis, T.L. (2026) *Machine Learning versus Structural Gravity: Predicting and Explaining EU Import Flows of Textile Trimmings, with an Application to Brazilian Suppliers (2015-2025)*. MSc dissertation, Gisma University of Applied Sciences.
+The scripts in `code/` are numbered in the order they run and `code/run_all.sh` runs the whole thing from the download to the last table. Every table and figure they produce lands in `results/`, which is where the numbers reported in the dissertation come from. There is also a lighter version of the modelling part in `code/ML_trimmings_thesis.ipynb`, which loads the panel straight from this repository and needs no local setup ([open it in Colab](https://colab.research.google.com/github/THS-99/trimmings-gravity-vs-ml/blob/main/code/ML_trimmings_thesis.ipynb)). The dissertation and the presentation slides go into `report/` after the submission in September 2026.
