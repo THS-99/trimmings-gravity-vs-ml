@@ -1,9 +1,0 @@
-# Python 3.11 — versions used for all reported results (fixed seeds: SEED=42)
-pandas==2.*
-numpy
-scikit-learn==1.8.0
-statsmodels==0.14.6
-lightgbm==4.7.0
-shap==0.51.0
-matplotlib
-requests
