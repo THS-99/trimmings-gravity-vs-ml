@@ -61,7 +61,9 @@ def load_panel():
     g = df.groupby(["exporter","destination","hs6"])["log1p_value"]
     df["l1_log"] = g.shift(1)
     df["l2_log"] = g.shift(2)
-    df["roll3_log"] = g.shift(1).rolling(3, min_periods=1).mean().reset_index(drop=True)
+    # rolling mean of t-1..t-3 inside each series (transform keeps the rolling
+    # window from running across series boundaries)
+    df["roll3_log"] = g.transform(lambda s: s.shift(1).rolling(3, min_periods=1).mean())
     # consecutive zero years immediately before t (history only, no leakage)
     def streak_before(values):
         out, run = [], 0
@@ -91,14 +93,31 @@ def inner_split(train_df):
 
 _PPML_CACHE = {}
 
-def ppml_feature(rows, origin_name):
-    """log1p of the PPML spec B prediction for these rows (hybrid feature sets).
-    Train rows carry the in-sample prediction of that origin's training fit,
-    test rows the frozen-coefficient prediction. Written by 08_ppml.py, so 08
-    must run before the hybrid variants in 09."""
-    if origin_name not in _PPML_CACHE:
+def ppml_feature(rows):
+    """log1p of the PPML spec B one-year-ahead prediction for these rows (hybrid
+    feature sets). For every year t the value comes from a spec B fit on
+    2015..t-1, so train and test rows carry the same kind of prediction and no
+    row sees a fit that used its own target. 2015 and 2016 have no fit before
+    them and are filled with 0, like the second lag. Written by 08_ppml.py."""
+    if "f" not in _PPML_CACHE:
         f = pd.read_csv(PROCESSED / "ppml_feature.csv.gz", dtype={"hs6": str})
-        for o, g in f.groupby("origin"):
-            _PPML_CACHE[o] = g.set_index(["exporter","destination","hs6","year"]).ppml_pred_log
+        _PPML_CACHE["f"] = f.set_index(["exporter","destination","hs6","year"]).ppml_pred_log
     idx = pd.MultiIndex.from_frame(rows[["exporter","destination","hs6","year"]])
-    return _PPML_CACHE[origin_name].reindex(idx).values
+    return _PPML_CACHE["f"].reindex(idx).fillna(0.0).values
+
+def make_model(name, params):
+    """One constructor shared by 09, 11 and 13 so every script fits the same models."""
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.neural_network import MLPRegressor
+    if name == "RF":
+        return RandomForestRegressor(random_state=SEED, n_jobs=2, **params)
+    if name == "LGBM":
+        import lightgbm as lgb
+        return lgb.LGBMRegressor(random_state=SEED, n_jobs=2, verbosity=-1, **params)
+    # MLP: the number of epochs is a tuned parameter chosen on the temporal
+    # validation year in 09 (sklearn's early_stopping would hold out a random
+    # 10% of the training rows instead), so the final fit runs a fixed number
+    # of epochs with no internal validation split
+    p = dict(params); epochs = p.pop("epochs")
+    return MLPRegressor(random_state=SEED, max_iter=epochs, early_stopping=False,
+                        n_iter_no_change=epochs, **p)

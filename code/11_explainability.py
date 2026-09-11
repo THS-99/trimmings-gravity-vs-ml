@@ -25,28 +25,21 @@ FIG = RES / "figures"; FIG.mkdir(exist_ok=True)
 
 def refit_winner(df, winner, params, origin):
     """Refit the winning model on the given origin (params frozen from tuning)."""
-    from sklearn.ensemble import RandomForestRegressor
-    from sklearn.neural_network import MLPRegressor
-    import lightgbm as lgb
     name, fs = winner.split("_", 1)
     train, test = feats.split(df, origin)
     Xtr = feats.design_matrix(train, fs in ("lags","hyb_lags"))
     Xte = feats.design_matrix(test, fs in ("lags","hyb_lags"))
     if fs.startswith("hyb_"):
-        Xtr["ppml_pred_log"] = feats.ppml_feature(train, origin["name"])
-        Xte["ppml_pred_log"] = feats.ppml_feature(test, origin["name"])
+        Xtr["ppml_pred_log"] = feats.ppml_feature(train)
+        Xte["ppml_pred_log"] = feats.ppml_feature(test)
     Xte = Xte.reindex(columns=Xtr.columns, fill_value=0.0)
     ytr, yte = train.log1p_value.values, test.log1p_value.values
-    if name == "RF":
-        m = RandomForestRegressor(random_state=feats.SEED, n_jobs=2, **params).fit(Xtr, ytr)
-    elif name == "LGBM":
-        import lightgbm as lgb
-        m = lgb.LGBMRegressor(random_state=feats.SEED, n_jobs=2, verbosity=-1, **params).fit(Xtr, ytr)
-    else:
+    m = feats.make_model(name, params)
+    if name == "MLP":
         sc = StandardScaler().fit(Xtr)
-        m = MLPRegressor(random_state=feats.SEED, max_iter=80, early_stopping=True,
-                         n_iter_no_change=8, **params).fit(sc.transform(Xtr), ytr)
+        m.fit(sc.transform(Xtr), ytr)
         return m, Xtr, Xte, yte, sc
+    m.fit(Xtr, ytr)
     return m, Xtr, Xte, yte, None
 
 def main():
@@ -85,7 +78,7 @@ def main():
     # explicitly in 4.5/5.3. Importance RANKING still comes from the winner (RF).
     shap_out = None
     if True:
-        import shap, lightgbm as lgb
+        import shap
         name, fs = winner.split("_", 1)
         if name != "LGBM":
             lgb_params = eval(json.loads((RES/"ml_tuning_report.json").read_text())
@@ -93,10 +86,9 @@ def main():
             train, test = feats.split(df, feats.ORIGINS[2])
             Xtr2 = feats.design_matrix(train, fs in ("lags","hyb_lags"))
             if fs.startswith("hyb_"):
-                Xtr2["ppml_pred_log"] = feats.ppml_feature(train, "O3")
+                Xtr2["ppml_pred_log"] = feats.ppml_feature(train)
             Xtr2 = Xtr2.reindex(columns=Xte.columns, fill_value=0.0)
-            m_shap = lgb.LGBMRegressor(random_state=feats.SEED, n_jobs=2, verbosity=-1,
-                                       **lgb_params).fit(Xtr2, train.log1p_value.values)
+            m_shap = feats.make_model("LGBM", lgb_params).fit(Xtr2, train.log1p_value.values)
         else:
             m_shap = m
         samp = Xte.sample(min(2500, len(Xte)), random_state=feats.SEED).astype(np.float32)

@@ -14,7 +14,9 @@ Protocol:
   - target log1p(value_eur), scored in levels after expm1 (decision f)
   - hyperparameters tuned ONCE on origin O1's inner temporal split
     (train 2015-2021, validate 2022), then frozen across origins; tuning
-    never sees any test year (no leakage across the time boundary).
+    never sees any test year (no leakage across the time boundary). For the
+    MLP the number of epochs is tuned on that same validation year instead of
+    sklearn's early_stopping, which would hold out a random 10% of the rows.
     If results/ml_tuning_report.json already exists the frozen parameters are
     reused instead of re-tuned (delete the file to force a fresh search).
     Hybrid variants reuse the parameters of their base feature set: same
@@ -25,16 +27,16 @@ Outputs:
   results/predictions_ml.csv    (origin, model, featureset, y_true, y_pred)
   results/ml_tuning_report.json
 """
-import ast, gc, json, time
+import ast, gc, json, time, warnings
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
-import lightgbm as lgb
+from sklearn.exceptions import ConvergenceWarning
 import importlib.util
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 spec = importlib.util.spec_from_file_location("feats", Path(__file__).with_name("07_features.py"))
 feats = importlib.util.module_from_spec(spec); spec.loader.exec_module(feats)
@@ -54,14 +56,8 @@ GRIDS = {
              {"hidden_layer_sizes":(256,128)}],
 }
 
-def make_model(name, params):
-    if name == "RF":
-        return RandomForestRegressor(random_state=SEED, n_jobs=2, **params)
-    if name == "LGBM":
-        return lgb.LGBMRegressor(random_state=SEED, n_jobs=2, verbosity=-1, **params)
-    if name == "MLP":
-        return MLPRegressor(random_state=SEED, max_iter=80, early_stopping=True,
-                            n_iter_no_change=8, **params)
+make_model = feats.make_model
+MAX_EPOCHS, PATIENCE = 80, 8
 
 def rmse_levels(y_log_true, y_log_pred):
     return float(np.sqrt(mean_squared_error(np.expm1(y_log_true),
@@ -87,15 +83,30 @@ def main():
         Xva = feats.design_matrix(inner_va, fs == "lags").reindex(columns=Xtr.columns, fill_value=0.0)
         ytr, yva = inner_tr.log1p_value.values, inner_va.log1p_value.values
         sc = StandardScaler().fit(Xtr)
+        Xtr_s, Xva_s = sc.transform(Xtr), sc.transform(Xva)
         for name, grid in GRIDS.items():
             scores = []
             for params in grid:
-                m = make_model(name, params)
                 t0 = time.time()
                 if name == "MLP":
-                    m.fit(sc.transform(Xtr), ytr); pred = m.predict(sc.transform(Xva))
-                else:
-                    m.fit(Xtr, ytr); pred = m.predict(Xva)
+                    # one epoch at a time, stop when the validation year (2022)
+                    # has not improved for PATIENCE epochs; the best epoch count
+                    # becomes part of the frozen parameters
+                    m = MLPRegressor(random_state=SEED, **params)
+                    best, best_ep, bad = np.inf, 0, 0
+                    for ep in range(1, MAX_EPOCHS + 1):
+                        m.partial_fit(Xtr_s, ytr)
+                        r = rmse_levels(yva, m.predict(Xva_s))
+                        if r < best:
+                            best, best_ep, bad = r, ep, 0
+                        else:
+                            bad += 1
+                        if bad == PATIENCE:
+                            break
+                    scores.append((best, {**params, "epochs": best_ep}, round(time.time()-t0,1)))
+                    continue
+                m = make_model(name, params)
+                m.fit(Xtr, ytr); pred = m.predict(Xva)
                 scores.append((rmse_levels(yva, pred), params, round(time.time()-t0,1)))
             scores.sort(key=lambda s: s[0])
             best_params[(name, fs)] = scores[0][1]
@@ -121,8 +132,8 @@ def main():
             Xtr = feats.design_matrix(train, with_lags)
             Xte = feats.design_matrix(test, with_lags)
             if fs.startswith("hyb_"):
-                Xtr["ppml_pred_log"] = feats.ppml_feature(train, origin["name"])
-                Xte["ppml_pred_log"] = feats.ppml_feature(test, origin["name"])
+                Xtr["ppml_pred_log"] = feats.ppml_feature(train)
+                Xte["ppml_pred_log"] = feats.ppml_feature(test)
             Xte = Xte.reindex(columns=Xtr.columns, fill_value=0.0)
             ytr = train.log1p_value.values
             sc = StandardScaler().fit(Xtr)

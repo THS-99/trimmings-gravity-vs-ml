@@ -25,8 +25,9 @@ Outputs:
   results/ppml_coefficients_specA.csv   (Table 5.3 input)
   results/predictions_ppml.csv          (origin, spec, y_true, y_pred per row)
   results/ppml_fit_report.json
-  data/processed/ppml_feature.csv.gz    (spec B predictions on train+test rows,
-                                         feeds the hybrid feature sets in 09)
+  data/processed/ppml_feature.csv.gz    (spec B one-year-ahead predictions for
+                                         every year 2017-2025, each from a fit on
+                                         2015..t-1; feeds the hybrid sets in 09)
 """
 import gc
 import json
@@ -75,10 +76,9 @@ def fit_predict(train, test, spec):
     else:
         res_cl = res
     pred = res.predict(Xte)
-    pred_train = res.predict(Xtr)
     converged, iters = res.converged, res.fit_history["iteration"]
     res_cl.remove_data()   # keeps params/SEs, frees the design matrix references
-    return res_cl, cols, pred, pred_train, converged, iters
+    return res_cl, cols, pred, converged, iters
 
 def main():
     df = feats.load_panel()
@@ -86,7 +86,7 @@ def main():
     for origin in feats.ORIGINS:
         train, test = feats.split(df, origin)
         for spec in ["A","B"]:
-            res, cols, pred, pred_train, converged, iters = fit_predict(train, test, spec)
+            res, cols, pred, converged, iters = fit_predict(train, test, spec)
             gc.collect()
             report[f"{origin['name']}_spec{spec}"] = {
                 "converged": bool(converged), "iterations": int(iters),
@@ -97,15 +97,6 @@ def main():
                 "exporter": test.exporter.values, "destination": test.destination.values,
                 "hs6": test.hs6.values, "year": test.year.values,
                 "y_true": test.value_eur.values, "y_pred": pred}))
-            if spec == "B":
-                # spec B predictions on train and test rows become the hybrid
-                # ML feature (supervisor suggestion: raw data + gravity predictions)
-                for part, prd in [(train, pred_train), (test, pred)]:
-                    feature_rows.append(pd.DataFrame({
-                        "origin": origin["name"],
-                        "exporter": part.exporter.values, "destination": part.destination.values,
-                        "hs6": part.hs6.values, "year": part.year.values,
-                        "ppml_pred_log": np.log1p(prd)}))
             if spec == "A" and origin["name"] == "O3":
                 names = ["const"] + [c for c in cols if c != "const"]
                 tab = pd.DataFrame({"variable": cols, "coef": res.params,
@@ -113,6 +104,23 @@ def main():
                                     "pvalue": res.pvalues})
                 coef_out = tab[~tab.variable.str.startswith(("year_","heading_"))]
     pd.concat(rows).to_csv(RES / "predictions_ppml.csv", index=False)
+
+    # Hybrid feature (supervisor suggestion: raw data + gravity predictions).
+    # Expanding window: the spec B prediction for year t always comes from a fit
+    # on 2015..t-1, for training and test rows alike. Using the in-sample fitted
+    # values for the training rows would put the target into the feature. The
+    # first fit uses two years (a single year leaves GDP collinear with the
+    # country effects), so 2015 and 2016 get no feature, like the second lag.
+    for t in range(2017, 2026):
+        hist, cur = df[df.year < t], df[df.year == t]
+        _, _, prd, converged, iters = fit_predict(hist, cur, "B")
+        gc.collect()
+        report[f"feature_{t}_specB"] = {"converged": bool(converged), "iterations": int(iters),
+                                        "n_train": int(len(hist))}
+        print(f"feature {t} specB converged={converged} iters={iters}", flush=True)
+        feature_rows.append(pd.DataFrame({
+            "exporter": cur.exporter.values, "destination": cur.destination.values,
+            "hs6": cur.hs6.values, "year": cur.year.values, "ppml_pred_log": np.log1p(prd)}))
     pd.concat(feature_rows).to_csv(feats.PROCESSED / "ppml_feature.csv.gz", index=False)
     coef_out.to_csv(RES / "ppml_coefficients_specA.csv", index=False)
     (RES / "ppml_fit_report.json").write_text(json.dumps(report, indent=2))

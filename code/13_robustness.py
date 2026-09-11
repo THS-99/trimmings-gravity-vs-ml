@@ -33,9 +33,6 @@ O3 = feats.ORIGINS[2]
 def rmse(y, p): return float(np.sqrt(((p-y)**2).mean()))
 
 def fit_ml(train, test, winner, params, drop_cols=None, ppml_tr=None, ppml_te=None):
-    from sklearn.ensemble import RandomForestRegressor
-    from sklearn.neural_network import MLPRegressor
-    import lightgbm as lgb
     name, fs = winner.split("_", 1)
     with_lags = fs in ("lags", "hyb_lags")
     Xtr = feats.design_matrix(train, with_lags); Xte = feats.design_matrix(test, with_lags)
@@ -47,17 +44,14 @@ def fit_ml(train, test, winner, params, drop_cols=None, ppml_tr=None, ppml_te=No
         Xte = Xte.drop(columns=[c for c in drop_cols if c in Xte], errors="ignore")
     Xte = Xte.reindex(columns=Xtr.columns, fill_value=0.0)
     ytr = train.log1p_value.values
-    if name == "RF":
-        m = RandomForestRegressor(random_state=feats.SEED, n_jobs=2, **params).fit(Xtr, ytr)
-        pl = m.predict(Xte)
-    elif name == "LGBM":
-        m = lgb.LGBMRegressor(random_state=feats.SEED, n_jobs=2, verbosity=-1, **params).fit(Xtr, ytr)
-        pl = m.predict(Xte)
-    else:
+    m = feats.make_model(name, params)
+    if name == "MLP":
         sc = StandardScaler().fit(Xtr)
-        m = MLPRegressor(random_state=feats.SEED, max_iter=80, early_stopping=True,
-                         n_iter_no_change=8, **params).fit(sc.transform(Xtr), ytr)
+        m.fit(sc.transform(Xtr), ytr)
         pl = m.predict(sc.transform(Xte))
+    else:
+        m.fit(Xtr, ytr)
+        pl = m.predict(Xte)
     return np.clip(np.expm1(pl), 0, None)
 
 def fit_ppml_b(train, test, drop_vars=None):
@@ -70,7 +64,17 @@ def fit_ppml_b(train, test, drop_vars=None):
                                          drop_first=True, dtype=float), has_constant="add")
     Xte = Xte.reindex(columns=Xtr.columns, fill_value=0.0)
     res = sm.GLM(train.value_eur.values, Xtr.values, family=sm.families.Poisson()).fit(maxiter=300)
-    return res.predict(Xte.values), res.predict(Xtr.values)
+    return res.predict(Xte.values)
+
+def ppml_feature_expanding(train, test, drop_vars=None):
+    """Hybrid feature for one check, same construction as in 08: the spec B
+    prediction for year t comes from a fit on the training years before t.
+    The first two training years have no fit before them and get 0, as in 08."""
+    years = sorted(train.year.unique())
+    tr_feat = pd.Series(0.0, index=train.index)
+    for t in years[2:]:
+        tr_feat[train.year == t] = fit_ppml_b(train[train.year < t], train[train.year == t], drop_vars)
+    return np.log1p(tr_feat.values), np.log1p(fit_ppml_b(train, test, drop_vars))
 
 def aggregate(df, by_bloc=False, by_hs4=False):
     keys = ["exporter", "year"]
@@ -91,7 +95,7 @@ def aggregate(df, by_bloc=False, by_hs4=False):
     g["log1p_value"] = np.log1p(g.value_eur)
     gg = g.groupby([c for c in ["exporter","destination","hs6"] if c in g])["log1p_value"]
     g["l1_log"], g["l2_log"] = gg.shift(1), gg.shift(2)
-    g["roll3_log"] = gg.shift(1).rolling(3, min_periods=1).mean().reset_index(drop=True)
+    g["roll3_log"] = gg.transform(lambda s: s.shift(1).rolling(3, min_periods=1).mean())
     g["zero_streak"] = 0.0
     return g
 
@@ -112,12 +116,12 @@ def main():
     def run(label, train, test, ml_kw=None, pp_kw=None, params_override=None, pp_feature=True):
         if label in done:
             return
-        p_pp, p_pp_tr = fit_ppml_b(train, test, **(pp_kw or {}))
+        p_pp = fit_ppml_b(train, test, **(pp_kw or {}))
         kw = dict(ml_kw or {})
         if "hyb" in winner and pp_feature:
-            # hybrid winner: the gravity feature is recomputed per check from the
-            # same PPML fit used in the comparison (keeps train/test consistent)
-            kw["ppml_tr"], kw["ppml_te"] = np.log1p(p_pp_tr), np.log1p(p_pp)
+            # hybrid winner: the gravity feature is recomputed per check on the
+            # check's own panel, with the expanding window of 08
+            kw["ppml_tr"], kw["ppml_te"] = ppml_feature_expanding(train, test, **(pp_kw or {}))
         p_ml = fit_ml(train, test, winner, params_override or params, **kw)
         r_ml, r_pp = rmse(test.value_eur.values, p_ml), rmse(test.value_eur.values, p_pp)
         checks.append({"check": label, "rmse_winner_eur": round(r_ml,1),
