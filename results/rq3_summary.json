@@ -1,5 +1,5 @@
 {
-  "winner": "RF_hyb_lags",
+  "winner": "RF_lags",
   "similar_suppliers": [
     "PK",
     "PH",
@@ -14,46 +14,46 @@
   ],
   "brazil": {
     "observed_meur": 12.65,
-    "predicted_meur": 10.41,
-    "relative_deviation_pct": 21.5
+    "predicted_meur": 10.88,
+    "relative_deviation_pct": 16.3
   },
   "brazil_ppmlB_relative_deviation_pct": -13.5,
-  "similar_median_relative_deviation_pct": 72.0,
+  "similar_median_relative_deviation_pct": 59.9,
   "similar_range_pct": [
-    27.6,
-    213.3
+    17.0,
+    174.1
   ],
   "brazil_rank_in_similar_set": 11,
   "brazil_by_heading": {
     "5804": {
       "obs_meur": 0.008,
-      "pred_meur": 0.002,
-      "rel_dev_pct": 315.4
+      "pred_meur": 0.003,
+      "rel_dev_pct": 232.5
     },
     "5806": {
       "obs_meur": 12.486,
-      "pred_meur": 10.39,
-      "rel_dev_pct": 20.2
+      "pred_meur": 10.861,
+      "rel_dev_pct": 15.0
     },
     "5808": {
       "obs_meur": 0.011,
       "pred_meur": 0.003,
-      "rel_dev_pct": 237.6
+      "rel_dev_pct": 257.8
     },
     "5810": {
       "obs_meur": 0.068,
-      "pred_meur": 0.005,
-      "rel_dev_pct": 1412.7
+      "pred_meur": 0.003,
+      "rel_dev_pct": 2038.6
     },
     "9606": {
       "obs_meur": 0.063,
       "pred_meur": 0.007,
-      "rel_dev_pct": 821.9
+      "rel_dev_pct": 797.6
     },
     "9607": {
       "obs_meur": 0.014,
       "pred_meur": 0.002,
-      "rel_dev_pct": 542.1
+      "rel_dev_pct": 738.9
     }
   }
 }

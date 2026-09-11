@@ -2,92 +2,92 @@
   "best_params": {
     "RF_nolags": "{'n_estimators': 200, 'min_samples_leaf': 5, 'max_features': 0.5, 'max_samples': 0.7}",
     "LGBM_nolags": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 127}",
-    "MLP_nolags": "{'hidden_layer_sizes': (128, 64)}",
+    "MLP_nolags": "{'hidden_layer_sizes': (256, 128), 'epochs': 13}",
     "RF_lags": "{'n_estimators': 200, 'min_samples_leaf': 5, 'max_features': 0.5, 'max_samples': 0.7}",
-    "LGBM_lags": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 63}",
-    "MLP_lags": "{'hidden_layer_sizes': (256, 128)}"
+    "LGBM_lags": "{'n_estimators': 800, 'learning_rate': 0.1, 'num_leaves': 63}",
+    "MLP_lags": "{'hidden_layer_sizes': (128, 64), 'epochs': 5}"
   },
   "tuning": {
     "RF_nolags": [
       {
-        "rmse_levels_val": 346439.8,
+        "rmse_levels_val": 348132.6,
         "params": "{'n_estimators': 200, 'min_samples_leaf': 5, 'max_features': 0.5, 'max_samples': 0.7}",
-        "fit_s": 40.4
+        "fit_s": 122.3
       },
       {
-        "rmse_levels_val": 375083.6,
+        "rmse_levels_val": 370725.8,
         "params": "{'n_estimators': 200, 'min_samples_leaf': 2, 'max_features': 'sqrt', 'max_samples': 0.7}",
-        "fit_s": 13.6
+        "fit_s": 42.3
       }
     ],
     "LGBM_nolags": [
       {
         "rmse_levels_val": 246925.1,
         "params": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 127}",
-        "fit_s": 8.9
+        "fit_s": 29.1
       },
       {
         "rmse_levels_val": 320783.3,
         "params": "{'n_estimators': 800, 'learning_rate': 0.1, 'num_leaves': 63}",
-        "fit_s": 3.4
+        "fit_s": 7.6
       },
       {
         "rmse_levels_val": 330064.7,
         "params": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 63}",
-        "fit_s": 6.5
+        "fit_s": 18.3
       }
     ],
     "MLP_nolags": [
       {
-        "rmse_levels_val": 344458.9,
-        "params": "{'hidden_layer_sizes': (128, 64)}",
-        "fit_s": 29.4
+        "rmse_levels_val": 315796.8,
+        "params": "{'hidden_layer_sizes': (256, 128), 'epochs': 13}",
+        "fit_s": 157.4
       },
       {
-        "rmse_levels_val": 352217.5,
-        "params": "{'hidden_layer_sizes': (256, 128)}",
-        "fit_s": 73.5
+        "rmse_levels_val": 361044.1,
+        "params": "{'hidden_layer_sizes': (128, 64), 'epochs': 4}",
+        "fit_s": 45.5
       }
     ],
     "RF_lags": [
       {
-        "rmse_levels_val": 179762.8,
+        "rmse_levels_val": 178471.3,
         "params": "{'n_estimators': 200, 'min_samples_leaf': 5, 'max_features': 0.5, 'max_samples': 0.7}",
-        "fit_s": 56.5
+        "fit_s": 170.6
       },
       {
-        "rmse_levels_val": 257752.2,
+        "rmse_levels_val": 265326.0,
         "params": "{'n_estimators': 200, 'min_samples_leaf': 2, 'max_features': 'sqrt', 'max_samples': 0.7}",
-        "fit_s": 18.9
+        "fit_s": 54.3
       }
     ],
     "LGBM_lags": [
       {
-        "rmse_levels_val": 207920.2,
-        "params": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 63}",
-        "fit_s": 7.7
-      },
-      {
-        "rmse_levels_val": 210167.4,
-        "params": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 127}",
-        "fit_s": 10.8
-      },
-      {
-        "rmse_levels_val": 211985.4,
+        "rmse_levels_val": 196568.3,
         "params": "{'n_estimators': 800, 'learning_rate': 0.1, 'num_leaves': 63}",
-        "fit_s": 4.4
+        "fit_s": 12.4
+      },
+      {
+        "rmse_levels_val": 229333.4,
+        "params": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 63}",
+        "fit_s": 20.8
+      },
+      {
+        "rmse_levels_val": 246429.3,
+        "params": "{'n_estimators': 1500, 'learning_rate': 0.05, 'num_leaves': 127}",
+        "fit_s": 30.3
       }
     ],
     "MLP_lags": [
       {
-        "rmse_levels_val": 192703.2,
-        "params": "{'hidden_layer_sizes': (256, 128)}",
-        "fit_s": 27.4
+        "rmse_levels_val": 214816.1,
+        "params": "{'hidden_layer_sizes': (128, 64), 'epochs': 5}",
+        "fit_s": 49.9
       },
       {
-        "rmse_levels_val": 200316.5,
-        "params": "{'hidden_layer_sizes': (128, 64)}",
-        "fit_s": 18.7
+        "rmse_levels_val": 232078.6,
+        "params": "{'hidden_layer_sizes': (256, 128), 'epochs': 5}",
+        "fit_s": 103.3
       }
     ]
   }

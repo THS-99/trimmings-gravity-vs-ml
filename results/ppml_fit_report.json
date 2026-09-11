@@ -1,7 +1,7 @@
 {
   "O1_specA": {
     "converged": true,
-    "iterations": 9,
+    "iterations": 11,
     "n_train": 202176,
     "n_params": 20
   },
@@ -13,19 +13,19 @@
   },
   "O2_specA": {
     "converged": true,
-    "iterations": 11,
+    "iterations": 10,
     "n_train": 227448,
     "n_params": 21
   },
   "O2_specB": {
     "converged": true,
-    "iterations": 16,
+    "iterations": 11,
     "n_train": 227448,
     "n_params": 95
   },
   "O3_specA": {
     "converged": true,
-    "iterations": 12,
+    "iterations": 9,
     "n_train": 252720,
     "n_params": 22
   },
@@ -34,5 +34,50 @@
     "iterations": 11,
     "n_train": 252720,
     "n_params": 95
+  },
+  "feature_2017_specB": {
+    "converged": true,
+    "iterations": 10,
+    "n_train": 50544
+  },
+  "feature_2018_specB": {
+    "converged": true,
+    "iterations": 13,
+    "n_train": 75816
+  },
+  "feature_2019_specB": {
+    "converged": true,
+    "iterations": 13,
+    "n_train": 101088
+  },
+  "feature_2020_specB": {
+    "converged": true,
+    "iterations": 12,
+    "n_train": 126360
+  },
+  "feature_2021_specB": {
+    "converged": true,
+    "iterations": 13,
+    "n_train": 151632
+  },
+  "feature_2022_specB": {
+    "converged": true,
+    "iterations": 15,
+    "n_train": 176904
+  },
+  "feature_2023_specB": {
+    "converged": true,
+    "iterations": 13,
+    "n_train": 202176
+  },
+  "feature_2024_specB": {
+    "converged": true,
+    "iterations": 11,
+    "n_train": 227448
+  },
+  "feature_2025_specB": {
+    "converged": true,
+    "iterations": 11,
+    "n_train": 252720
   }
 }
