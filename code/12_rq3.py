@@ -74,19 +74,22 @@ def main():
     }
     (RES/"rq3_summary.json").write_text(json.dumps(out, indent=2))
 
-    # Fig 5.4: Brazil observed vs predicted by year (winner + PPML_B)
+    # Fig 5.4: observed vs predicted by year, whole panel and Brazil (winner + PPML_B)
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    br = preds[preds.exporter=="BR"].groupby(["model","year"])[["y_true","y_pred"]].sum().reset_index()
-    fig, ax = plt.subplots(figsize=(7,4.2))
-    yrs = sorted(br.year.unique())
-    obs = br[br.model==winner].set_index("year").y_true/1e6
-    ax.plot(yrs, obs.loc[yrs], "o-", color="#1F3864", label="Observed")
-    for mdl, style, col in [(winner,"s--","#C0504D"), ("PPML_B","^--","#4BACC6")]:
-        p = br[br.model==mdl].set_index("year").y_pred/1e6
-        ax.plot(yrs, p.loc[yrs], style, color=col, label=f"Predicted ({mdl})")
-    ax.set_xlabel("Test year"); ax.set_ylabel("Brazil -> EU27 imports (M EUR)")
-    ax.set_xticks(yrs); ax.legend(); ax.set_title("Brazil: observed vs predicted, test years")
+    yrs = sorted(preds.year.unique())
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
+    for ax, sel, title in [(axes[0], preds, "All 39 suppliers to the EU27"),
+                           (axes[1], preds[preds.exporter=="BR"], "Brazil to the EU27")]:
+        g = sel.groupby(["model","year"])[["y_true","y_pred"]].sum().reset_index()
+        obs = g[g.model==winner].set_index("year").y_true/1e6
+        ax.plot(yrs, obs.loc[yrs], "o-", color="#1F3864", label="Observed")
+        for mdl, style, col in [(winner,"s--","#C0504D"), ("PPML_B","^--","#4BACC6")]:
+            p = g[g.model==mdl].set_index("year").y_pred/1e6
+            ax.plot(yrs, p.loc[yrs], style, color=col, label=f"Predicted ({mdl})")
+        ax.set_ylim(0, None); ax.set_xticks(yrs)
+        ax.set_xlabel("Test year"); ax.set_ylabel("Imports (M EUR)"); ax.set_title(title)
+    axes[1].legend()
     fig.tight_layout(); fig.savefig(FIG/"fig_5_4_brazil.png", dpi=150); plt.close(fig)
     print(json.dumps(out, indent=2))
 
