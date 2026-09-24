@@ -105,7 +105,7 @@ def main():
                 coef_out = tab[~tab.variable.str.startswith(("year_","heading_"))]
     pd.concat(rows).to_csv(RES / "predictions_ppml.csv", index=False)
 
-    # Hybrid feature (supervisor suggestion: raw data + gravity predictions).
+    # Hybrid feature (raw data + gravity predictions into the ML models).
     # Expanding window: the spec B prediction for year t always comes from a fit
     # on 2015..t-1, for training and test rows alike. Using the in-sample fitted
     # values for the training rows would put the target into the feature. The

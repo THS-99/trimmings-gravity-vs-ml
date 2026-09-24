@@ -135,7 +135,7 @@ def main():
                        "pct_improvement_vs_naive": round(100*obs3/float(np.sqrt(((pair3.y_pred_naive-pair3.y_true)**2).mean())),2),
                        "bootstrap_ci95": [round(ci3[0],1), round(ci3[1],1)], "p_two_sided": p3}
 
-    # Second question (supervisor): does the gravity prediction feature improve
+    # Second question: does the gravity prediction feature improve
     # the ML itself? Same cluster bootstrap, best hybrid vs best pure ML.
     hyb = pooled[pooled.model.str.contains("hyb")]
     if len(hyb):

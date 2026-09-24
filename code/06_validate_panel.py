@@ -1,6 +1,6 @@
 """
 06_validate_panel.py
-Real-world validation of the panel (supervisor's core requirement), two checks:
+Real-world validation of the panel, two checks:
 
   1. MIRROR: EU-reported imports from Brazil (Comext, CIF, EUR) vs
      Brazil-reported exports to the EU27 (ComexStat, FOB, USD), year by year.
