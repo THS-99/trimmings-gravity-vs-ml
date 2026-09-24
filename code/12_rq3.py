@@ -11,6 +11,8 @@ EU imports), using RELATIVE deviations (share of predicted), so common model
 error washes out of the comparison.
 
 Outputs: results/table_5_4_deviations.csv, results/rq3_summary.json,
+         results/rq3_brazil_by_destination.csv (winner),
+         results/rq3_brazil_by_destination_ppml.csv (PPML spec B),
          figures/fig_5_4_brazil.png
 """
 import json
@@ -51,6 +53,14 @@ def main():
             .groupby("heading")[["y_true","y_pred"]].sum())
     br_h["deviation_eur"] = br_h.y_true - br_h.y_pred
     br_h["relative_deviation_pct"] = 100*br_h.deviation_eur/br_h.y_pred
+
+    # Brazil by destination (Table 5.4b), winner and PPML_B side by side
+    for mdl, suffix in [(winner, ""), ("PPML_B", "_ppml")]:
+        br_d = (preds[(preds.model==mdl)&(preds.exporter=="BR")]
+                .groupby("destination")[["y_true","y_pred"]].sum())
+        br_d["dev"] = br_d.y_true - br_d.y_pred
+        br_d["rel_pct"] = 100*br_d.dev/br_d.y_pred
+        br_d.round(1).to_csv(RES/f"rq3_brazil_by_destination{suffix}.csv")
 
     dev.to_csv(RES/"table_5_4_deviations.csv", index=False)
     br_row = dev[(dev.model==winner)&(dev.exporter=="BR")].iloc[0]
