@@ -13,7 +13,7 @@ Outputs (data/processed/):
   hs6_scope.csv                        definitive HS6 code list
   panel_summary.json                   dimensions, zero-share (overall / by split / by year)
 
-Decisions implemented here (see 04_Data_and_Methods/Decision_Log.md):
+Decisions implemented here:
   (a) destination = EU member states (27 reporters)
   (d) annual frequency
   Zeros kept as true zeros: the Comext extraction returns only nonzero flows,
@@ -138,8 +138,8 @@ def main():
         panel = panel.merge(pop.rename(columns={"iso3":iso_col,"pop":f"pop_{side}"}),
                             on=[iso_col,"year"], how="left")
 
-    # Taiwan (TWN) is absent from WDI: use CEPII gdp_o / pop_o for 2015-2021,
-    # 2022-2025 stay missing and are flagged (see Decision_Log / limitations).
+    # Taiwan (TWN) is absent from WDI: use CEPII gdp_o / pop_o, which reaches
+    # 2019. 2020-2025 stay missing and are flagged (discussed in the limitations).
     tw = cep[cep.iso3_o=="TWN"][["year","gdp_o","pop_o"]].dropna().drop_duplicates("year")
     for y, g, p in tw.itertuples(index=False):
         m = (panel.exporter_iso3=="TWN") & (panel.year==y)

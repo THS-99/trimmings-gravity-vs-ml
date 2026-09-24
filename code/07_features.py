@@ -3,7 +3,7 @@
 Shared feature engineering and split definitions for the PPML baseline and the
 ML models. Imported by scripts 08-13; not run directly.
 
-Decisions implemented (Decision_Log.md):
+Decisions implemented:
   (b) rolling-origin validation, 3 origins:
         O1: train 2015-2022 -> test 2023
         O2: train 2015-2023 -> test 2024
@@ -15,9 +15,10 @@ Decisions implemented (Decision_Log.md):
       one-step-ahead design.
   (f) ML target = log1p(value_eur); predictions back-transformed with expm1 and
       ALL models are scored in levels (EUR).
-Taiwan GDP 2022-25 is missing (WDI has no TWN): forward-filled within exporter
-and flagged with gdp_exporter_missing, so tree models and the MLP receive a
-complete matrix plus the missingness signal.
+GDP is missing for Taiwan in 2020-25 (WDI has no TWN and CEPII stops at 2019)
+and for San Marino in 2024-25, 5,184 rows or 1.86% of the panel. Both are
+forward-filled within exporter and flagged with gdp_exporter_missing, so tree
+models and the MLP receive a complete matrix plus the missingness signal.
 """
 import numpy as np
 import pandas as pd
@@ -44,7 +45,7 @@ def load_panel():
                      dtype={"hs6": str, "heading": str})
     df = df.sort_values(["exporter","destination","hs6","year"]).reset_index(drop=True)
 
-    # Taiwan GDP gap: forward-fill within exporter (2021 value carried), flag kept
+    # Taiwan GDP gap: forward-fill within exporter (2019 value carried), flag kept
     df["gdp_o_missing"] = df["gdp_exporter"].isna().astype(int)
     df["gdp_exporter"] = df.groupby("exporter")["gdp_exporter"].ffill()
     df["pop_exporter"] = df.groupby("exporter")["pop_exporter"].ffill()

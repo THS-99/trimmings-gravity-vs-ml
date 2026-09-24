@@ -1,6 +1,6 @@
 """
 09_ml.py
-ML benchmark models (decision set mirrors fichas 5-7: one per family):
+ML benchmark models, one per family:
   RF    random forest           (Breiman-style bagged trees)
   LGBM  gradient boosting       (LightGBM)
   MLP   feed-forward network    (mirrors Morland et al.'s FFNN, honest simple
@@ -9,7 +9,7 @@ ML benchmark models (decision set mirrors fichas 5-7: one per family):
 Protocol:
   - identical one-hot design for all models (07_features.design_matrix),
     four variants: without lags, with lags, and the same two again plus the
-    PPML spec B prediction as an extra feature ("hyb_", supervisor suggestion:
+    PPML spec B prediction as an extra feature ("hyb_": the hybrid design,
     raw data + gravity predictions into the ML models; 08 must run first)
   - target log1p(value_eur), scored in levels after expm1 (decision f)
   - hyperparameters tuned ONCE on origin O1's inner temporal split
