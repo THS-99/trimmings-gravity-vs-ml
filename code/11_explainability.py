@@ -1,15 +1,4 @@
-"""
-11_explainability.py
-RQ2: puts PPML spec A coefficients side by side with ML feature importances.
-
-  - permutation importance of the winning ML model, computed on the TEST set
-    (pooled over origins would refit; we use origin O3 for the longest window)
-  - SHAP values (TreeExplainer for tree models) on a test sample: give
-    DIRECTION, which permutation importance alone does not
-  - output feeds Table 5.3 and Fig 5.3
-
-Outputs: results/table_5_3_rq2.csv, results/shap_summary.csv, figures/fig_5_3_shap.png
-"""
+"""Compare the PPML spec A coefficients with the permutation importances and SHAP values of the winning ML model for Table 5.3 and Figure 5.3."""
 import json
 import numpy as np
 import pandas as pd
@@ -24,7 +13,6 @@ RES = Path(__file__).resolve().parents[1] / "results"
 FIG = RES / "figures"; FIG.mkdir(exist_ok=True)
 
 def refit_winner(df, winner, params, origin):
-    """Refit the winning model on the given origin (params frozen from tuning)."""
     name, fs = winner.split("_", 1)
     train, test = feats.split(df, origin)
     Xtr = feats.design_matrix(train, fs in ("lags","hyb_lags"))
@@ -50,8 +38,6 @@ def main():
     df = feats.load_panel()
     m, Xtr, Xte, yte, sc = refit_winner(df, winner, params, feats.ORIGINS[2])
 
-    # memory-constrained environment: single worker, 10k-row test sample,
-    # float32 design (documented in 4.7; does not change rankings materially)
     rng = np.random.default_rng(feats.SEED)
     sel = rng.choice(len(Xte), min(10_000, len(Xte)), replace=False)
     Xp = Xte.iloc[sel].astype(np.float32); yp = yte[sel]
@@ -61,7 +47,6 @@ def main():
     imp = (pd.DataFrame({"feature": Xte.columns, "perm_importance": perm.importances_mean})
              .sort_values("perm_importance", ascending=False))
 
-    # group one-hot blocks so importances compare with gravity variables
     def block(f):
         for p in ["exporter_","destination_","hs6_"]:
             if f.startswith(p): return p[:-1] + " (one-hot block)"
@@ -70,12 +55,8 @@ def main():
     imp_block = (imp.groupby("block").perm_importance.sum()
                    .sort_values(ascending=False).reset_index())
 
-    imp.to_csv(RES / "perm_importance_full.csv", index=False)   # save before SHAP
+    imp.to_csv(RES / "perm_importance_full.csv", index=False)
 
-    # SHAP directions. TreeExplainer on a large random forest is computationally
-    # infeasible here (hours); directions are computed on LGBM with the SAME
-    # feature set (the runner-up model, near-tied on log metrics), stated
-    # explicitly in 4.5/5.3. Importance RANKING still comes from the winner (RF).
     shap_out = None
     if True:
         import shap
@@ -93,8 +74,6 @@ def main():
             m_shap = m
         samp = Xte.sample(min(2500, len(Xte)), random_state=feats.SEED).astype(np.float32)
         sv = shap.TreeExplainer(m_shap).shap_values(samp)
-        # index=samp.index: the SHAP rows must line up with the sampled test rows,
-        # otherwise Series.corr aligns on the panel index and pairs the wrong rows
         sv = pd.DataFrame(sv, columns=Xte.columns, index=samp.index)
         shap_out = pd.DataFrame({
             "feature": Xte.columns,
@@ -113,7 +92,6 @@ def main():
         except Exception as e:
             print("shap plot skipped:", e)
 
-    # Table 5.3: coefficients vs importances
     coefs = pd.read_csv(RES / "ppml_coefficients_specA.csv")
     map_feature = {"ln_gdp_o":"ln_gdp_o","ln_gdp_d":"ln_gdp_d","ln_dist":"ln_dist",
                    "contig":"contig","comlang_off":"comlang_off","comcol":"comcol","rta":"rta"}

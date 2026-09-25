@@ -1,32 +1,4 @@
-"""
-09_ml.py
-ML benchmark models, one per family:
-  RF    random forest           (Breiman-style bagged trees)
-  LGBM  gradient boosting       (LightGBM)
-  MLP   feed-forward network    (mirrors Morland et al.'s FFNN, honest simple
-                                 architecture over fashionable ones)
-
-Protocol:
-  - identical one-hot design for all models (07_features.design_matrix),
-    four variants: without lags, with lags, and the same two again plus the
-    PPML spec B prediction as an extra feature ("hyb_": the hybrid design,
-    raw data + gravity predictions into the ML models; 08 must run first)
-  - target log1p(value_eur), scored in levels after expm1 (decision f)
-  - hyperparameters tuned ONCE on origin O1's inner temporal split
-    (train 2015-2021, validate 2022), then frozen across origins; tuning
-    never sees any test year (no leakage across the time boundary). For the
-    MLP the number of epochs is tuned on that same validation year instead of
-    sklearn's early_stopping, which would hold out a random 10% of the rows.
-    If results/ml_tuning_report.json already exists the frozen parameters are
-    reused instead of re-tuned (delete the file to force a fresh search).
-    Hybrid variants reuse the parameters of their base feature set: same
-    model, one added feature, so any difference is the feature, not the tuning
-  - fixed seeds (SEED=42)
-
-Outputs:
-  results/predictions_ml.csv    (origin, model, featureset, y_true, y_pred)
-  results/ml_tuning_report.json
-"""
+"""Tune and fit the random forest, LightGBM and MLP benchmarks on the four feature sets over the three rolling origins."""
 import ast, gc, json, time, warnings
 import numpy as np
 import pandas as pd
@@ -43,9 +15,6 @@ feats = importlib.util.module_from_spec(spec); spec.loader.exec_module(feats)
 SEED = feats.SEED
 RES = Path(__file__).resolve().parents[1] / "results"
 
-# Grid sized for the available hardware (2 CPUs): shallower forests via
-# min_samples_leaf >= 2 and subsampled bootstrap draws; full spaces would not
-# change the family comparison and are documented in the appendix.
 GRIDS = {
     "RF":   [{"n_estimators":200,"min_samples_leaf":5,"max_features":0.5,"max_samples":0.7},
              {"n_estimators":200,"min_samples_leaf":2,"max_features":"sqrt","max_samples":0.7}],
@@ -68,7 +37,6 @@ def main():
     tuning, best_params = {}, {}
     scalers_cache = {}
 
-    # ---- tuning on O1 inner split (skipped when the frozen report exists)
     report_path = RES / "ml_tuning_report.json"
     if report_path.exists():
         saved = json.loads(report_path.read_text())
@@ -89,9 +57,6 @@ def main():
             for params in grid:
                 t0 = time.time()
                 if name == "MLP":
-                    # one epoch at a time, stop when the validation year (2022)
-                    # has not improved for PATIENCE epochs; the best epoch count
-                    # becomes part of the frozen parameters
                     m = MLPRegressor(random_state=SEED, **params)
                     best, best_ep, bad = np.inf, 0, 0
                     for ep in range(1, MAX_EPOCHS + 1):
@@ -113,9 +78,6 @@ def main():
             tuning[f"{name}_{fs}"] = [{"rmse_levels_val": round(s[0],1),
                                        "params": str(s[1]), "fit_s": s[2]} for s in scores]
 
-    # ---- final fits per origin with frozen params
-    # each fit is checkpointed so the script resumes instead of restarting when
-    # the small container kills a long run
     part_path = RES / "predictions_ml_partial.csv"
     rows, done_keys = [], set()
     if part_path.exists():

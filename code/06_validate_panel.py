@@ -1,18 +1,4 @@
-"""
-06_validate_panel.py
-Real-world validation of the panel, two checks:
-
-  1. MIRROR: EU-reported imports from Brazil (Comext, CIF, EUR) vs
-     Brazil-reported exports to the EU27 (ComexStat, FOB, USD), year by year.
-     Comext EUR converted to USD with the WDI Euro-area exchange rate
-     (PA.NUS.FCRF, EUR per USD, annual average). CIF > FOB is expected;
-     the check is that the two series are close and co-move.
-
-  2. KNOWN EVENT: the 2020 pandemic dip must be visible in total EU imports
-     of the six headings.
-
-Outputs: ../results/validation_report.md and validation.json
-"""
+"""Validate the panel against Brazil's mirror export records and the 2020 pandemic dip."""
 import json
 import pandas as pd
 from pathlib import Path
@@ -37,20 +23,18 @@ def main():
     fx = pd.read_csv(next((RAW/"wdi_fx").glob("API_*.csv")), skiprows=4)
     fx_rate = {int(c): fx[c].iloc[0] for c in fx.columns if c.isdigit() and fx[c].notna().any()}
 
-    # ---- Check 1: mirror Brazil -> EU27
     bz["dest2"] = bz.country_pt.map(EU27_PT)
     eu_names_missed = sorted(set(bz.loc[bz.dest2.isna(), "country_pt"].unique()))
     bz_eu = bz.dropna(subset=["dest2"]).groupby("year").fob_usd.sum()
 
     cx_br = (panel[panel.exporter=="BR"].groupby("year").value_eur.sum())
-    cx_br_usd = cx_br / pd.Series(fx_rate)   # EUR / (EUR per USD) = USD
+    cx_br_usd = cx_br / pd.Series(fx_rate)
 
     mirror = pd.DataFrame({"comext_cif_usd": cx_br_usd, "comexstat_fob_usd": bz_eu}).dropna()
     mirror["ratio_cif_fob"] = mirror.comext_cif_usd / mirror.comexstat_fob_usd
     mirror["discrepancy_pct"] = 100*(mirror.comext_cif_usd - mirror.comexstat_fob_usd)/mirror.comexstat_fob_usd
     corr = mirror.comext_cif_usd.corr(mirror.comexstat_fob_usd)
 
-    # ---- Check 2: 2020 dip
     tot = panel.groupby("year").value_eur.sum()/1e6
     dip_2020_vs_2019 = 100*(tot[2020]-tot[2019])/tot[2019]
     rebound_2021 = 100*(tot[2021]-tot[2020])/tot[2020]

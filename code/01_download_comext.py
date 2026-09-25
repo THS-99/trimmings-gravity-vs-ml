@@ -1,12 +1,4 @@
-"""
-01_download_comext.py
-Downloads EU imports of the six trimmings headings from the Eurostat Comext API
-(dataset DS-045409), at HS6 level, annual, 2015-2025, all 27 MS reporters,
-top-40 extra-EU suppliers + Brazil. Also reproduces the supplier ranking.
-
-Executed 2026-08-21 (via browser session with identical parameters; see
-data/DOWNLOAD_LOG.md). Output: data/raw/comext_trimmings_hs6_2015_2025.csv
-"""
+"""Download EU imports of the six trimmings headings from Eurostat Comext at HS6 level for 2015 to 2025."""
 import time
 import requests
 import pandas as pd
@@ -34,7 +26,6 @@ def fetch(params):
     return r.json()
 
 def decode(js, keep_reporters=None):
-    """JSON-stat sparse cube -> list of (reporter, partner, year, value)."""
     ids, sizes, dim = js["id"], js["size"], js["dimension"]
     cats = []
     for d in ids:
@@ -53,7 +44,6 @@ def decode(js, keep_reporters=None):
     return out
 
 def rank_suppliers():
-    """Cumulative EU27 imports per partner over the six headings, 2015-2025."""
     totals = {}
     for h in HEADINGS:
         js = fetch([("reporter","EU27_2020"),("product",h)])

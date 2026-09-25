@@ -1,34 +1,4 @@
-"""
-08_ppml.py
-PPML structural gravity baseline (Santos Silva & Tenreyro 2006; specification
-following Yotov et al. 2016), two specifications per decision (c):
-
-  Spec A ("interpretable", answers RQ2): pooled gravity with explicit GDP and
-    pair covariates, year and heading fixed effects, SEs clustered by
-    exporter x destination pair. Estimated on each origin's training window;
-    coefficients reported from O3 (longest window).
-
-  Spec B ("prediction", enters the RQ1 benchmark): exporter, destination and
-    HS6 fixed effects plus the time-varying covariates (ln GDP o/d, RTA) and
-    pair covariates. NOTE on test-year fixed effects (the pending choice the
-    guide asks to describe): exporter-YEAR fixed effects cannot be extended to
-    unseen years, so the prediction spec uses time-invariant country and
-    product fixed effects, with time variation carried by observed GDP,
-    population and RTA in the test year. Coefficients are frozen at training
-    values; test-year covariates are observed. Rows with zero trade are kept
-    (that is the point of PPML).
-
-Convergence is reported explicitly (Gopinath et al. 2021's PPML reference
-failed to converge; a clean convergence is worth stating).
-
-Outputs:
-  results/ppml_coefficients_specA.csv   (Table 5.3 input)
-  results/predictions_ppml.csv          (origin, spec, y_true, y_pred per row)
-  results/ppml_fit_report.json
-  data/processed/ppml_feature.csv.gz    (spec B one-year-ahead predictions for
-                                         every year 2017-2025, each from a fit on
-                                         2015..t-1; feeds the hybrid sets in 09)
-"""
+"""Fit the two PPML gravity specifications on each rolling origin and write the predictions, the spec A coefficients and the hybrid feature."""
 import gc
 import json
 import numpy as np
@@ -62,11 +32,9 @@ def build_X(df, spec):
 
 def fit_predict(train, test, spec):
     Xtr, Xte = build_X(train, spec), build_X(test, spec)
-    Xte = Xte.reindex(columns=Xtr.columns, fill_value=0.0)   # align dummies
+    Xte = Xte.reindex(columns=Xtr.columns, fill_value=0.0)
     cols = Xtr.columns.tolist()
     groups = (train.exporter + "_" + train.destination) if spec == "A" else None
-    # numpy arrays only from here; the spec B design is large and the container
-    # memory is tight, so the DataFrame copies are dropped as soon as possible
     Xtr, Xte = Xtr.to_numpy(), Xte.to_numpy()
     model = sm.GLM(train.value_eur.values, Xtr, family=sm.families.Poisson())
     res = model.fit(maxiter=300, tol=1e-8)
@@ -77,7 +45,7 @@ def fit_predict(train, test, spec):
         res_cl = res
     pred = res.predict(Xte)
     converged, iters = res.converged, res.fit_history["iteration"]
-    res_cl.remove_data()   # keeps params/SEs, frees the design matrix references
+    res_cl.remove_data()
     return res_cl, cols, pred, converged, iters
 
 def main():
@@ -105,12 +73,6 @@ def main():
                 coef_out = tab[~tab.variable.str.startswith(("year_","heading_"))]
     pd.concat(rows).to_csv(RES / "predictions_ppml.csv", index=False)
 
-    # Hybrid feature (raw data + gravity predictions into the ML models).
-    # Expanding window: the spec B prediction for year t always comes from a fit
-    # on 2015..t-1, for training and test rows alike. Using the in-sample fitted
-    # values for the training rows would put the target into the feature. The
-    # first fit uses two years (a single year leaves GDP collinear with the
-    # country effects), so 2015 and 2016 get no feature, like the second lag.
     for t in range(2017, 2026):
         hist, cur = df[df.year < t], df[df.year == t]
         _, _, prd, converged, iters = fit_predict(hist, cur, "B")

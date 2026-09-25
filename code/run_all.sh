@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# One-line reproduction path (4.7): downloads raw data, builds the panel,
-# validates it, runs both model branches and every analysis table/figure.
-# Seeds fixed in scripts (SEED=42); download dates logged in data/DOWNLOAD_LOG.md.
+# Download the raw data, build and validate the panel and regenerate every table and figure.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 code/01_download_comext.py

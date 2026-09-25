@@ -1,24 +1,4 @@
-"""
-10_evaluate.py
-RQ1 evaluation: builds Table 5.2 (models x metrics, pooled over the three
-rolling origins and per origin) and runs the significance test (decision g:
-paired bootstrap of squared-error differences, best ML vs PPML_B). The
-bootstrap resamples exporter-destination pairs, not rows: the rows of one
-corridor are not independent of each other (same clustering as spec A's SEs).
-A naive persistence forecast (last year's value) is added to the table as a
-reference point for the size of the gain over gravity.
-
-Metrics (4.6): RMSE and MAE in levels (EUR); RMSE and MAE on log1p; WAPE
-(= sum|err| / sum y, scale-free and zero-safe); R2 in levels for dialogue with
-Morland/Sellami. MAPE deliberately NOT used headline (explodes on zeros,
-Sellami lesson) - reported only on nonzero flows with that caveat.
-
-Segments: by heading (with/without 5806), by flow size, Brazil vs rest,
-by test year (horizon reading, echo Morland).
-
-Outputs: results/table_5_2_metrics.csv, table_5_2_segments.csv,
-         significance.json
-"""
+"""Score every model on the three test years, build Table 5.2 and run the cluster bootstrap significance tests."""
 import json
 import numpy as np
 import pandas as pd
@@ -52,7 +32,6 @@ def load_predictions():
     ppml["featureset"] = "-"
     ml = pd.read_csv(RES / "predictions_ml.csv")
     ml["model"] = ml.model + "_" + ml.featureset
-    # naive persistence: predict last year's value for the same corridor
     panel = pd.read_csv(feats.PROCESSED / "panel_trimmings_2015_2025.csv")
     prev = panel[["exporter","destination","hs6","year","value_eur"]].copy()
     prev["year"] += 1
@@ -62,8 +41,6 @@ def load_predictions():
     return pd.concat([ppml, ml, naive], ignore_index=True)
 
 def cluster_bootstrap(pair, col_a, col_b):
-    """Paired bootstrap of RMSE(b) - RMSE(a) over exporter-destination clusters.
-    Positive = model a better. pair is indexed by (origin, exporter, destination, hs6, year)."""
     e_a, e_b = (pair[col_a]-pair.y_true)**2, (pair[col_b]-pair.y_true)**2
     cl = pair.index.get_level_values("exporter") + "_" + pair.index.get_level_values("destination")
     g = pd.DataFrame({"cl": cl, "a": e_a.values, "b": e_b.values}).groupby("cl")
@@ -82,7 +59,6 @@ def main():
     df = load_predictions()
     df["heading"] = df.hs6.astype(str).str.zfill(6).str[:4]
 
-    # Table 5.2: pooled over the three origins + per origin
     rows = []
     for (model,), g in df.groupby([df.model]):
         rows.append({"model": model, "origin": "pooled", **metrics(g)})
@@ -95,7 +71,6 @@ def main():
     best_ml = pooled[~pooled.model.str.startswith(("PPML","Naive"))].iloc[0].model
     print("Winner (pooled RMSE):", pooled.iloc[0].model, "| best ML:", best_ml)
 
-    # Segments for the best ML and PPML_B
     seg_rows = []
     for model in [best_ml, "PPML_B", "PPML_A"]:
         g = df[df.model==model]
@@ -113,8 +88,6 @@ def main():
             seg_rows.append({"model": model, "segment": f"year_{y}", **metrics(gy)})
     pd.DataFrame(seg_rows).to_csv(RES / "table_5_2_segments.csv", index=False)
 
-    # Significance: paired cluster bootstrap (B=2000) over exporter-destination
-    # pairs, statistic = RMSE(PPML_B) - RMSE(best ML); positive = ML better.
     key = ["origin","exporter","destination","hs6","year"]
     a = df[df.model==best_ml].set_index(key)[["y_true","y_pred"]]
     b = df[df.model=="PPML_B"].set_index(key)["y_pred"]
@@ -127,7 +100,6 @@ def main():
            "p_two_sided": p_two, "B": B, "n_test_obs": len(pair),
            "cluster": "exporter_destination", "n_clusters": int(k)}
 
-    # Same test against the naive persistence forecast, to size the gain
     c = df[df.model=="Naive_lag1"].set_index(key)["y_pred"]
     pair3 = a.join(c.rename("y_pred_naive")).dropna()
     obs3, ci3, p3, _ = cluster_bootstrap(pair3, "y_pred", "y_pred_naive")
@@ -135,8 +107,6 @@ def main():
                        "pct_improvement_vs_naive": round(100*obs3/float(np.sqrt(((pair3.y_pred_naive-pair3.y_true)**2).mean())),2),
                        "bootstrap_ci95": [round(ci3[0],1), round(ci3[1],1)], "p_two_sided": p3}
 
-    # Second question: does the gravity prediction feature improve
-    # the ML itself? Same cluster bootstrap, best hybrid vs best pure ML.
     hyb = pooled[pooled.model.str.contains("hyb")]
     if len(hyb):
         best_hyb = hyb.iloc[0].model

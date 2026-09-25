@@ -1,16 +1,4 @@
-"""
-14_descriptives.py
-Setup and descriptives for section 5.1: Table 5.1 (panel dimensions and
-zero-share by split) and the figures the text points to:
-  Fig 5.1  EU27 imports by heading, 2015-2025 (M EUR)
-  Fig 5.2  supplier shares of EU27 imports of the six headings (cumulative)
-
-Style: single y-axis, labeled axes with units, recessive grid, fixed colors per
-heading (never re-assigned), markers as secondary encoding besides color.
-
-Outputs: results/table_5_1_panel.csv, figures/fig_5_1_headings.png,
-         figures/fig_5_2_suppliers.png
-"""
+"""Build Table 5.1 and Figures 5.1 and 5.2 from the panel dimensions, the imports by heading and the supplier ranking."""
 import json
 import numpy as np
 import pandas as pd
@@ -35,7 +23,6 @@ MARKERS = {"5804":"o","5806":"s","5810":"^","5808":"D","9606":"v","9607":"P"}
 def main():
     df = feats.load_panel()
 
-    # Table 5.1
     rows = []
     for label, sub in [("full 2015-2025", df),
                        ("train 2015-2022", df[df.year<=2022]),
@@ -48,7 +35,6 @@ def main():
                                              / sub.value_eur.sum(),1)})
     pd.DataFrame(rows).to_csv(RES/"table_5_1_panel.csv", index=False)
 
-    # Fig 5.1: EU imports by heading over time
     by = df.groupby(["heading","year"]).value_eur.sum().unstack(0)/1e6
     fig, ax = plt.subplots(figsize=(7.5,4.5))
     for h in ["5806","9607","9606","5810","5804","5808"]:
@@ -62,7 +48,6 @@ def main():
                  fontsize=10)
     fig.tight_layout(); fig.savefig(FIG/"fig_5_1_headings.png", dpi=150); plt.close(fig)
 
-    # Fig 5.2: supplier shares (cumulative 2015-2025), top 12 + Brazil highlighted
     sup = df.groupby("exporter").value_eur.sum().sort_values(ascending=False)/1e6
     top = sup.head(12)
     if "BR" not in top.index: top = pd.concat([top, sup[["BR"]]])

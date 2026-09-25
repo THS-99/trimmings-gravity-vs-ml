@@ -1,21 +1,4 @@
-"""
-13_robustness.py
-Robustness checks (Table 5.5). To keep compute honest on limited hardware,
-each check re-runs the RQ1 winner and PPML_B on origin O3 only (longest
-training window, test = 2025); the main result uses all three origins.
-Conclusion column: does the winner still beat PPML_B on out-of-sample RMSE
-in levels? (Y/N)
-
-Checks:
-  1 without 5806          (dominant, heterogeneous heading removed)
-  2 HS4 aggregation       (does granularity drive the result?)
-  3 window excl. 2020-21  (pandemic years out of training)
-  4 hyperparameter perturbation of the winner
-  5 feature ablation      (no lags; no policy covariate rta)
-  6 EU as one bloc        (destination aggregated, decision (a) robustness)
-
-Output: results/table_5_5_robustness.csv
-"""
+"""Run the robustness checks of Table 5.5 on origin O3 for the winning ML model and PPML spec B."""
 import gc
 import json
 import numpy as np
@@ -67,9 +50,6 @@ def fit_ppml_b(train, test, drop_vars=None):
     return res.predict(Xte.values)
 
 def ppml_feature_expanding(train, test, drop_vars=None):
-    """Hybrid feature for one check, same construction as in 08: the spec B
-    prediction for year t comes from a fit on the training years before t.
-    The first two training years have no fit before them and get 0, as in 08."""
     years = sorted(train.year.unique())
     tr_feat = pd.Series(0.0, index=train.index)
     for t in years[2:]:
@@ -85,7 +65,6 @@ def aggregate(df, by_bloc=False, by_hs4=False):
     agg = {"value_eur": "sum", **{c: "first" for c in num_first}}
     g = df.groupby(keys, as_index=False).agg(agg)
     if by_bloc:
-        # destination collapsed: pair covariates -> trade-weighted means over MS
         w = df.assign(w=df.value_eur+1).groupby(["exporter","year"] + (["heading"] if by_hs4 else ["hs6"]))
         for c in ["ln_dist","contig","comlang_off","comcol","comrelig","ln_gdp_d","ln_pop_d"]:
             g[c] = w.apply(lambda x: np.average(x[c], weights=x.w)).values
@@ -106,7 +85,6 @@ def main():
     df = feats.load_panel()
     tr0, te0 = feats.split(df, O3)
 
-    # resume from a partial table if a previous run was cut short
     checks, done = [], set()
     if (RES/"table_5_5_robustness.csv").exists():
         prev = pd.read_csv(RES/"table_5_5_robustness.csv")
@@ -119,8 +97,6 @@ def main():
         p_pp = fit_ppml_b(train, test, **(pp_kw or {}))
         kw = dict(ml_kw or {})
         if "hyb" in winner and pp_feature:
-            # hybrid winner: the gravity feature is recomputed per check on the
-            # check's own panel, with the expanding window of 08
             kw["ppml_tr"], kw["ppml_te"] = ppml_feature_expanding(train, test, **(pp_kw or {}))
         p_ml = fit_ml(train, test, winner, params_override or params, **kw)
         r_ml, r_pp = rmse(test.value_eur.values, p_ml), rmse(test.value_eur.values, p_pp)
@@ -135,8 +111,6 @@ def main():
     run("baseline_O3", tr0, te0)
     run("1_without_5806", tr0[tr0.heading!="5806"], te0[te0.heading!="5806"])
     run("3_excl_2020_21", tr0[~tr0.year.isin([2020,2021])], te0)
-    # perturbation: double integer regularizers, shrink float fractions by 30%
-    # (kept inside valid ranges); n_estimators unchanged
     pert = dict(params)
     for k, v in list(pert.items()):
         if k == "n_estimators" or not isinstance(v, (int, float)): continue

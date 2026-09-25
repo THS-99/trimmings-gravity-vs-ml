@@ -1,25 +1,4 @@
-"""
-07_features.py
-Shared feature engineering and split definitions for the PPML baseline and the
-ML models. Imported by scripts 08-13; not run directly.
-
-Decisions implemented:
-  (b) rolling-origin validation, 3 origins:
-        O1: train 2015-2022 -> test 2023
-        O2: train 2015-2023 -> test 2024
-        O3: train 2015-2024 -> test 2025
-      One-step-ahead design: each origin predicts the next calendar year only.
-  (e) lags: ML runs with AND without lag features, both reported.
-      Lags of the target use actual history only (t-1, t-2 relative to the
-      predicted year), which never crosses the origin's time boundary in a
-      one-step-ahead design.
-  (f) ML target = log1p(value_eur); predictions back-transformed with expm1 and
-      ALL models are scored in levels (EUR).
-GDP is missing for Taiwan in 2020-25 (WDI has no TWN and CEPII stops at 2019)
-and for San Marino in 2024-25, 5,184 rows or 1.86% of the panel. Both are
-forward-filled within exporter and flagged with gdp_exporter_missing, so tree
-models and the MLP receive a complete matrix plus the missingness signal.
-"""
+"""Shared panel loading, feature engineering, rolling origins and model constructors for the modelling scripts."""
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -45,7 +24,6 @@ def load_panel():
                      dtype={"hs6": str, "heading": str})
     df = df.sort_values(["exporter","destination","hs6","year"]).reset_index(drop=True)
 
-    # Taiwan GDP gap: forward-fill within exporter (2019 value carried), flag kept
     df["gdp_o_missing"] = df["gdp_exporter"].isna().astype(int)
     df["gdp_exporter"] = df.groupby("exporter")["gdp_exporter"].ffill()
     df["pop_exporter"] = df.groupby("exporter")["pop_exporter"].ffill()
@@ -58,14 +36,10 @@ def load_panel():
     df["year_idx"] = df["year"] - 2015
     df["log1p_value"] = np.log1p(df["value_eur"])
 
-    # Lag features within each exporter x destination x hs6 series
     g = df.groupby(["exporter","destination","hs6"])["log1p_value"]
     df["l1_log"] = g.shift(1)
     df["l2_log"] = g.shift(2)
-    # rolling mean of t-1..t-3 inside each series (transform keeps the rolling
-    # window from running across series boundaries)
     df["roll3_log"] = g.transform(lambda s: s.shift(1).rolling(3, min_periods=1).mean())
-    # consecutive zero years immediately before t (history only, no leakage)
     def streak_before(values):
         out, run = [], 0
         for v in values:
@@ -77,7 +51,6 @@ def load_panel():
     return df
 
 def design_matrix(df, with_lags):
-    """One-hot design shared by all ML models (identical inputs across models)."""
     cols = NUMERIC + (LAGS if with_lags else [])
     X = pd.get_dummies(df[CATS + cols], columns=CATS, dtype=float)
     return X.fillna(0.0)
@@ -88,18 +61,12 @@ def split(df, origin):
     return tr, te
 
 def inner_split(train_df):
-    """Temporal inner split for tuning: last training year is the validation year."""
     val_year = max(train_df.year)
     return train_df[train_df.year < val_year], train_df[train_df.year == val_year]
 
 _PPML_CACHE = {}
 
 def ppml_feature(rows):
-    """log1p of the PPML spec B one-year-ahead prediction for these rows (hybrid
-    feature sets). For every year t the value comes from a spec B fit on
-    2015..t-1, so train and test rows carry the same kind of prediction and no
-    row sees a fit that used its own target. 2015 and 2016 have no fit before
-    them and are filled with 0, like the second lag. Written by 08_ppml.py."""
     if "f" not in _PPML_CACHE:
         f = pd.read_csv(PROCESSED / "ppml_feature.csv.gz", dtype={"hs6": str})
         _PPML_CACHE["f"] = f.set_index(["exporter","destination","hs6","year"]).ppml_pred_log
@@ -107,7 +74,6 @@ def ppml_feature(rows):
     return _PPML_CACHE["f"].reindex(idx).fillna(0.0).values
 
 def make_model(name, params):
-    """One constructor shared by 09, 11 and 13 so every script fits the same models."""
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.neural_network import MLPRegressor
     if name == "RF":
@@ -115,10 +81,6 @@ def make_model(name, params):
     if name == "LGBM":
         import lightgbm as lgb
         return lgb.LGBMRegressor(random_state=SEED, n_jobs=2, verbosity=-1, **params)
-    # MLP: the number of epochs is a tuned parameter chosen on the temporal
-    # validation year in 09 (sklearn's early_stopping would hold out a random
-    # 10% of the training rows instead), so the final fit runs a fixed number
-    # of epochs with no internal validation split
     p = dict(params); epochs = p.pop("epochs")
     return MLPRegressor(random_state=SEED, max_iter=epochs, early_stopping=False,
                         n_iter_no_change=epochs, **p)

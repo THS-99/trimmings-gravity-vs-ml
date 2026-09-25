@@ -1,12 +1,4 @@
-"""
-04_download_cepii.py
-Downloads the CEPII Gravity database V202211 (Conte, Cotterlaz & Mayer 2022)
-and extracts the main CSV. ~207 MB zip, 1.25 GB CSV; NOT redistributed in the
-repository, re-download with this script.
-
-Executed 2026-08-21 (via browser navigation, identical URL; see data/DOWNLOAD_LOG.md).
-Output: data/raw/cepii/Gravity_V202211.csv
-"""
+"""Download the CEPII Gravity database and extract the main CSV."""
 import io
 import zipfile
 import requests

@@ -1,20 +1,4 @@
-"""
-12_rq3.py
-RQ3: Brazil's under/over-trading. Deviation = observed - predicted, pooled over
-the three test years (2023-2025), benchmark model = RQ1 winner, with PPML_B as
-the robustness benchmark (agreement between the two = stronger evidence).
-
-The honest caveat (5.4 P3): a deviation mixes unrealized potential, model error
-and omitted factors. Mitigation implemented here: Brazil is compared against
-suppliers of similar scale (the 10 suppliers nearest to Brazil in cumulative
-EU imports), using RELATIVE deviations (share of predicted), so common model
-error washes out of the comparison.
-
-Outputs: results/table_5_4_deviations.csv, results/rq3_summary.json,
-         results/rq3_brazil_by_destination.csv (winner),
-         results/rq3_brazil_by_destination_ppml.csv (PPML spec B),
-         figures/fig_5_4_brazil.png
-"""
+"""Measure Brazil's deviation between observed and predicted EU imports by supplier group, heading and destination for Table 5.4 and Figure 5.4."""
 import json
 import numpy as np
 import pandas as pd
@@ -32,7 +16,6 @@ def main():
     preds = pd.concat([ml[ml.model==winner], pp[pp.model=="PPML_B"]], ignore_index=True)
     preds["heading"] = preds.hs6.astype(str).str.zfill(6).str[:4]
 
-    # supplier scale (test-period observed totals)
     scale = preds[preds.model==winner].groupby("exporter").y_true.sum()
     br_scale = scale["BR"]
     similar = (scale.drop("BR") - br_scale).abs().sort_values().head(10).index.tolist()
@@ -48,13 +31,11 @@ def main():
                          "relative_deviation_pct": 100*(obs-pred)/pred if pred>0 else np.nan})
     dev = pd.DataFrame(rows)
 
-    # Brazil by heading (winner)
     br_h = (preds[(preds.model==winner)&(preds.exporter=="BR")]
             .groupby("heading")[["y_true","y_pred"]].sum())
     br_h["deviation_eur"] = br_h.y_true - br_h.y_pred
     br_h["relative_deviation_pct"] = 100*br_h.deviation_eur/br_h.y_pred
 
-    # Brazil by destination (Table 5.4b), winner and PPML_B side by side
     for mdl, suffix in [(winner, ""), ("PPML_B", "_ppml")]:
         br_d = (preds[(preds.model==mdl)&(preds.exporter=="BR")]
                 .groupby("destination")[["y_true","y_pred"]].sum())
@@ -84,7 +65,6 @@ def main():
     }
     (RES/"rq3_summary.json").write_text(json.dumps(out, indent=2))
 
-    # Fig 5.4: observed vs predicted by year, whole panel and Brazil (winner + PPML_B)
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     yrs = sorted(preds.year.unique())

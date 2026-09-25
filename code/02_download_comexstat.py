@@ -1,12 +1,4 @@
-"""
-02_download_comexstat.py
-Downloads Brazil's exports of the six trimmings headings from the ComexStat/MDIC
-API, by destination country and HS6 subheading, FOB USD and KG, 2015-2025.
-
-Executed 2026-08-21 (via browser session with identical body; see
-data/DOWNLOAD_LOG.md). Output: data/raw/comexstat_brazil_trimmings_2015_2025.csv
-Rate limit: ~1 request / 10 s.
-"""
+"""Download Brazil's exports of the six trimmings headings from the ComexStat API."""
 import requests
 import pandas as pd
 from pathlib import Path
@@ -30,7 +22,6 @@ def main():
                         "kg": x["metricKG"]} for x in rows])
     OUT.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT / "comexstat_brazil_trimmings_2015_2025.csv", index=False)
-    # cross-check against the verified facts bank (ABIT/Comtrade): 27.80 / 28.72 M USD
     for y in (2024, 2025):
         print(y, round(df[df.year.astype(int)==y].fob_usd.astype(float).sum()/1e6, 2), "M USD")
 
