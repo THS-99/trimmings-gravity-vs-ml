@@ -44,7 +44,7 @@ SHAP values are computed on LGBM_lags, because TreeExplainer on a forest this si
 ## RQ3 - Brazil (Table 5.4, test years 2023 to 2025 pooled)
 
 - Benchmark RF_lags: Brazil observed EUR 12.65M against EUR 10.88M predicted, **+16.3%**.
-- The ten suppliers nearest to Brazil in cumulative EU imports show a median of **+59.9%**, range +17.0% to +174.1%. Brazil ranks **11th of 11**, last of its peer group.
+- The ten suppliers nearest to Brazil in observed EU imports over the three test years show a median of **+59.9%**, range +17.0% to +174.1%. Brazil ranks **11th of 11**, last of its peer group.
 - PPML_B as the cross-check: Brazil **-13.5%**. The two benchmarks disagree on the sign of the gap but agree on the comparative reading, which is the one the dissertation uses.
 - By heading: 5806, which is 98.7% of Brazil's EU trade, comes out at +15.0% (12.486 observed vs 10.861 predicted). The tiny headings show very large relative deviations off near-zero bases, a base effect that is flagged rather than interpreted.
 - By destination: Romania absorbs almost the whole flow and sits at +10.7% under the winner, while PPML_B puts it at +2,111.8% because the gravity model expects the Brazilian volume to spread across the larger member states. See `rq3_brazil_by_destination.csv` and `rq3_brazil_by_destination_ppml.csv`.
@@ -78,4 +78,6 @@ Figures: `fig_5_1_headings.png`, `fig_5_2_suppliers.png`, `fig_5_3_shap.png`, `f
 
 Support: `significance.json`, `rq3_summary.json`, `ppml_coefficients_specA.csv`, `ppml_fit_report.json`, `ml_tuning_report.json`, `perm_importance_full.csv`, `perm_importance_blocks.csv`, `shap_summary.csv`, `validation.json`.
 
-The row-level prediction files that scripts 08 and 09 write, `predictions_ml.csv` and `predictions_ppml.csv`, stay out of the repository because of their size. Scripts 10 to 13 read them from `results/` after a run.
+The row-level prediction files that scripts 08 and 09 write, `predictions_ml.csv` and `predictions_ppml.csv`, stay out of the repository because of their size, and so do the uncompressed panel that script 05 writes to `data/processed/` and the hybrid feature file `ppml_feature.csv.gz` that script 08 writes next to it. Scripts 10 to 13 read the predictions from `results/` after a run. The compressed copy of the panel, `panel_trimmings_2015_2025.csv.gz`, is committed so that the notebook can load it directly.
+
+Two scripts resume from their own outputs: 09 reuses the frozen hyperparameters in `ml_tuning_report.json` instead of tuning again, and 13 skips every check already listed in `table_5_5_robustness.csv`. A run from scratch therefore starts by deleting those two files, and `predictions_ml_partial.csv` if a previous run left it behind.
