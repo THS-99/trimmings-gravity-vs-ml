@@ -93,7 +93,9 @@ def main():
             m_shap = m
         samp = Xte.sample(min(2500, len(Xte)), random_state=feats.SEED).astype(np.float32)
         sv = shap.TreeExplainer(m_shap).shap_values(samp)
-        sv = pd.DataFrame(sv, columns=Xte.columns)
+        # index=samp.index: the SHAP rows must line up with the sampled test rows,
+        # otherwise Series.corr aligns on the panel index and pairs the wrong rows
+        sv = pd.DataFrame(sv, columns=Xte.columns, index=samp.index)
         shap_out = pd.DataFrame({
             "feature": Xte.columns,
             "mean_abs_shap": sv.abs().mean().values,
